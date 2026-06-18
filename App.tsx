@@ -22,21 +22,18 @@ import {
   Music,
 } from "lucide-react";
 import RSVPPlayer from "./components/RSVPPlayer";
-import BackgroundMusic from "./components/BackgroundMusic";
 import VideoExportButton from "./components/VideoExportButton";
 import { processText } from "./utils/textProcessor";
 import { WordData, AppFont, AppFontWeight } from "./types";
 
 const App: React.FC = () => {
-  const [text, setText] = useState<string>(
-    "Speed reading is a skill that can be developed with practice. Rapid Serial Visual Presentation, or RSVP, is one of the most effective methods to achieve higher reading speeds. By presenting words one by one at a fixed focal point, we eliminate the time lost in eye movements across a page. This app allows you to customize your experience by adjusting the Words Per Minute. Focus on the red character and let the information flow directly into your mind."
-  );
-  const [wpm, setWpm] = useState<number>(300);
-  const [initialWpm, setInitialWpm] = useState<number>(300);
+  const [text, setText] = useState<string>('');
+  const [wpm, setWpm] = useState<number>(650);
+  const [initialWpm, setInitialWpm] = useState<number>(650);
   const [targetWpm, setTargetWpm] = useState<number>(600);
   const [enableGradualIncrease, setEnableGradualIncrease] =
     useState<boolean>(false);
-  const [wpmJumpStep, setWpmJumpStep] = useState<number>(50);
+  const [wpmJumpStep, setWpmJumpStep] = useState<number>(25);
   const [font, setFont] = useState<AppFont>("mono");
   const [fontWeight, setFontWeight] = useState<AppFontWeight>("bold");
   const [sideOpacity, setSideOpacity] = useState<number>(0.8);
@@ -45,7 +42,7 @@ const App: React.FC = () => {
   );
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState<boolean>(true);
   const [isZenMode, setIsZenMode] = useState<boolean>(false);
   const [showZenHint, setShowZenHint] = useState<boolean>(false);
 
@@ -77,7 +74,7 @@ const App: React.FC = () => {
   // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger play/pause if user is typing in an input or textarea
+      // Don't trigger play/pause if user is typing in an input or text area
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
@@ -88,10 +85,23 @@ const App: React.FC = () => {
       if (e.code === "Space") {
         e.preventDefault();
         togglePlay();
-      } else if (e.code === "Escape") {
+      } else if (e.code === "Escape" || e.code === "CapsLock") {
         setIsZenMode(false);
         setShowSettings(false);
+      } else if (e.key === "s" || e.key === "S") {
+        setShowSettings((prev) => !prev);
+      } else if (e.key === "z" || e.key === "Z") {
+        if (isZenMode) {
+          setIsZenMode(false);
+        } else {
+          enterZenMode();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        setCurrentIndex(Math.max(0, currentIndex - 5))
+      } else if (e.key === 'ArrowRight') {
+        setCurrentIndex(Math.max(0, currentIndex - 5))
       }
+
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -154,39 +164,6 @@ const App: React.FC = () => {
         isZenMode ? "cursor-none" : ""
       }`}
     >
-      {/* Zen Hint Overlay */}
-      <div
-        className={`fixed inset-0 z-[200] flex items-center justify-center pointer-events-none transition-opacity duration-1000 ${
-          showZenHint ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <div className="bg-zinc-900/80 backdrop-blur-md px-6 py-4 rounded-2xl border border-zinc-800 flex flex-col items-center gap-2 shadow-2xl">
-          <div className="flex gap-4 text-zinc-400">
-            <div className="flex items-center gap-1">
-              <span className="px-2 py-0.5 bg-zinc-800 rounded text-white text-xs font-bold sm:inline hidden">
-                SPACE
-              </span>{" "}
-              <span className="text-xs">
-                <span className="sm:hidden">Tap</span>
-                <span className="hidden sm:inline">Space</span> to Play/Pause
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="px-2 py-0.5 bg-zinc-800 rounded text-white text-xs font-bold sm:inline hidden">
-                ESC
-              </span>{" "}
-              <span className="text-xs">
-                <span className="sm:hidden">Exit button</span>
-                <span className="hidden sm:inline">ESC</span> to Exit Zen
-              </span>
-            </div>
-          </div>
-          <p className="text-red-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-2">
-            Zen Mode Active
-          </p>
-        </div>
-      </div>
-
       {/* Header - Hidden in Zen Mode */}
       <header
         className={`p-6 flex justify-between items-center border-b border-zinc-900 transition-all duration-500 ${
@@ -196,24 +173,8 @@ const App: React.FC = () => {
         }`}
       >
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center font-bold text-black shadow-[0_0_15px_rgba(220,38,38,0.5)]">
-            R
-          </div>
-          <h1 className="text-xl font-bold tracking-tight uppercase">
-            RSVP Speed Reader
-          </h1>
         </div>
         <div className="flex items-center gap-4">
-          <VideoExportButton
-            words={words}
-            wpm={wpm}
-            font={font}
-            fontWeight={fontWeight}
-            sideOpacity={sideOpacity}
-            enableGradualIncrease={enableGradualIncrease}
-            initialWpm={initialWpm}
-            targetWpm={targetWpm}
-          />
           <button
             onClick={() => setShowSettings(!showSettings)}
             className="p-2 hover:bg-zinc-900 rounded-full transition-colors flex items-center gap-2"
@@ -346,7 +307,7 @@ const App: React.FC = () => {
               : "max-h-0 opacity-0 pointer-events-none"
           }`}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Text Input */}
             <div className="lg:col-span-2 p-6 bg-zinc-950 border border-zinc-900 rounded-2xl flex flex-col gap-4">
               <div className="flex items-center justify-between">
@@ -545,103 +506,6 @@ const App: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Custom Audio */}
-              <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-zinc-900">
-                <div className="flex items-center gap-2 text-zinc-400">
-                  <Music size={16} />
-                  <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]">
-                    Focus Audio
-                  </h3>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Paste mp3 URL here..."
-                      value={audioSrc}
-                      onChange={(e) => setAudioSrc(e.target.value)}
-                      className="flex-1 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-400 focus:outline-none focus:border-red-600"
-                    />
-                    <button
-                      onClick={() =>
-                        setAudioSrc(
-                          "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-                        )
-                      }
-                      className="px-3 py-2 bg-zinc-900 text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-zinc-800 transition-colors"
-                    >
-                      Reset
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">
-                      Or use local file:
-                    </span>
-                    <input
-                      type="file"
-                      accept="audio/*"
-                      className="hidden"
-                      ref={fileInputRef}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const url = URL.createObjectURL(file);
-                          setAudioSrc(url);
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1.5 bg-zinc-900/50 border border-zinc-800 text-[9px] font-bold uppercase tracking-widest rounded transition-colors hover:bg-zinc-800 hover:text-white"
-                    >
-                      Choose File
-                    </button>
-                    {audioSrc.startsWith("blob:") && (
-                      <span className="text-[9px] text-red-500 font-bold uppercase animate-pulse">
-                        Custom File Loaded
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Instructions / How to Use */}
-            <div className="p-6 bg-zinc-900/40 border border-zinc-900 rounded-2xl flex flex-col gap-4">
-              <div className="flex items-center gap-2 text-zinc-200">
-                <HelpCircle size={18} className="text-red-500" />
-                <h3 className="text-sm font-bold uppercase tracking-wider">
-                  Controls
-                </h3>
-              </div>
-              <ul className="space-y-4 text-xs text-zinc-400 leading-relaxed">
-                <li className="flex gap-3">
-                  <span className="text-red-500 font-bold">Space</span>
-                  <p>Play or Pause the reader.</p>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-red-500 font-bold">Esc</span>
-                  <p>
-                    Exit Settings or{" "}
-                    <span className="text-white">Zen Mode</span>.
-                  </p>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-red-500 font-bold">Zen</span>
-                  <p>
-                    Click the <b>Zen</b> button for zero distractions.
-                  </p>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-red-500 font-bold">Export</span>
-                  <p>
-                    Generate a video with your current settings.{" "}
-                    <b>Optimized for speed!</b>
-                  </p>
-                </li>
-              </ul>
             </div>
           </div>
         </div>
@@ -671,16 +535,7 @@ const App: React.FC = () => {
           isZenMode ? "opacity-0 pointer-events-none" : "opacity-100"
         }`}
       >
-        <p className="text-xs uppercase tracking-[0.2em] font-medium opacity-50">
-          Focus is the key to faster comprehension
-        </p>
       </footer>
-
-      <BackgroundMusic
-        isPlaying={isPlaying}
-        isZenMode={isZenMode}
-        src={audioSrc}
-      />
     </div>
   );
 };
